@@ -5,9 +5,16 @@ import anthropic
 import streamlit as st
 import pandas as pd
 import json
+from github import Github
 from datetime import datetime, timedelta
 
 API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+# 깃헙 액세스 토큰
+ACCESS_TOKEN = st.secrets["github_token"]
+
+# 깃헙 레퍼지토리 정보
+REPO_NAME = 'postAuto'
+REPO_OWNER = 'youngouk'
 
 if API_KEY is None:
     raise ValueError("ANTHROPIC_API_KEY environment variable is not set.")
@@ -84,14 +91,32 @@ def save_blog_post(filename, topic, category, tags, content):
     st.session_state.blog_posts.append(blog_post)
     with open('blog_posts.json', 'w') as f:
         json.dump(st.session_state.blog_posts, f)
+    
+    # 깃헙 연결
+    g = Github(ACCESS_TOKEN)
+    repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
 
+    # 블로그 포스트 파일 업로드
+    repo.create_file(
+        path=filename,        message=f"Add blog post: {topic}",
+        content=content,
+    )
 
-def load_blog_posts():
+    # 메타데이터 파일 업로드
     try:
-        with open('blog_posts.json', 'r') as f:
-            st.session_state.blog_posts = json.load(f)
-    except FileNotFoundError:
-        st.session_state.blog_posts = []
+        contents = repo.get_contents("blog_posts.json")
+        repo.update_file(
+            path='blog_posts.json',
+            message="Update blog post metadata",
+            content=json.dumps(st.session_state.blog_posts),
+            sha=contents.sha
+        )
+    except:
+        repo.create_file(
+            path='blog_posts.json',
+            message="Create blog post metadata",
+            content=json.dumps(st.session_state.blog_posts)
+        )
 
 
 prompt_example = f'''마크다운 문법을 사용하여 블로그 포스트를 작성합니다.
