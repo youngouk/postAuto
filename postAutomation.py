@@ -54,15 +54,12 @@ def get_file(filename):
     g = Github(ACCESS_TOKEN)
     repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
 
-    # 파일 경로 수정
-    file_path = f"blog/posts/{filename}"
-
     try:
         # 깃헙에서 파일 읽기
-        file_content = repo.get_contents(file_path).decoded_content.decode('utf-8')
+        file_content = repo.get_contents(filename).decoded_content.decode('utf-8')
         return file_content
     except:
-        st.error(f"파일을 찾을 수 없습니다: {file_path}")
+        st.error(f"파일을 찾을 수 없습니다: {filename}")
         return "파일을 찾을 수 없습니다."
 
 def make_prompt(prompt, topic='<<TOPIC>>', category='<<CATEGORY>>'):
@@ -392,10 +389,10 @@ def main():
 
                     try:
                         # 깃헙에서 파일 읽기
-                        file_content = repo.get_contents(file_path).decoded_content.decode('utf-8')
+                        file_content = repo.get_contents(filename).decoded_content.decode('utf-8')
                         blog_content = file_content
                     except:
-                        st.error(f"파일을 찾을 수 없습니다: {file_path}")
+                        st.error(f"파일을 찾을 수 없습니다: {filename}")
                         blog_content = "파일을 찾을 수 없습니다."
 
                     st.markdown(blog_content)
