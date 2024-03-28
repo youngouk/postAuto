@@ -129,6 +129,12 @@ prompt_example = f'''마크다운 문법을 사용하여 블로그 포스트를 
 * 차량 구매에 관심있는 30~50대 한국인을 주요 타겟으로 합니다.
 * 포스트 상단에는 글의 요약을 제공합니다.'''
 
+def load_blog_posts():
+    try:
+        with open('blog_posts.json', 'r') as f:
+            st.session_state.blog_posts = json.load(f)
+    except FileNotFoundError:
+        st.session_state.blog_posts = []
 
 def main():
     st.set_page_config(page_title="Blog Generator", layout="wide")
