@@ -132,40 +132,10 @@ def load_blog_posts():
     except FileNotFoundError:
         st.session_state.blog_posts = []
 
-def main():
-    st.set_page_config(page_title="Blog Generator", layout="wide")
-    load_blog_posts()
-
-    # choice 변수에 '블로그 생성'으로 기본값 할당
-    choice = "블로그 생성"
-
-    # 사이드바에 고정형 메뉴 버튼 추가
-    st.sidebar.title("메뉴")
-    if st.sidebar.button("블로그 생성"):
-        choice = "블로그 생성"
-    elif st.sidebar.button("생성된 블로그 목록"):
-        choice = "생성된 블로그 목록"
-
-    if choice == "블로그 생성":
-        # Preset Container
-        preset_container = st.container()
-        preset_container.subheader('1. 설정')
-        tab_single, tab_multiple = preset_container.tabs(['1개 생성', '여러개 생성'])
-
-        col1, col2 = tab_single.columns(2)
-
-        topic = col1.text_input(label='주제 입력', placeholder='주제를 입력해 주세요')
-        col1.markdown('(예시)')
-        col1.markdown('`차량 구매보다 장기렌트가 유리한 경우 3가지`')
-
-        category = col2.text_input(label='카테고리 입력', placeholder='카테고리를 입력해 주세요')
-        col2.markdown('(예시)')
-        col2.markdown('`장기렌트`')
-
-        def generate_blog(topic, category, prompt):
-            # 사용자 입력(prompt)에 추가적인 예시 텍스트를 포함시킵니다.
-            additional_context = """ [예시 포스트 작성-참조 필요]
-            ##리스렌트 자동차세 어떻게 납부하나요?
+def generate_blog(topic, category, prompt):
+    # 사용자 입력(prompt)에 추가적인 예시 텍스트를 포함시킵니다.
+    additional_context = """ [예시 포스트 작성-참조 필요]
+    ##리스렌트 자동차세 어떻게 납부하나요?
 ###이 상품을 이용하면 내가 직접 안내도 된다
 
 작성일 2023.12.26.
@@ -216,41 +186,68 @@ def main():
 
 ####🪧 마치며
 매년 6월과 12월 납부하는 자동차세. 매년 돌아오는 납부 기간이 조금은 귀찮다면 직접 납부할 필요가 없는 장기렌트는 어떨까요?
-            """
+    """
 
-            # 최종 프롬프트 생성
-            final_prompt = make_prompt(prompt + additional_context, topic=topic, category=category)
+    # 최종 프롬프트 생성
+    final_prompt = make_prompt(prompt + additional_context, topic=topic, category=category)
 
-            # 수정된 부분: 최종 프롬프트(final_prompt)를 generate_text 함수에 전달
-            response = generate_text(prompt=final_prompt)
-            body = response
+    # 수정된 부분: 최종 프롬프트(final_prompt)를 generate_text 함수에 전달
+    response = generate_text(prompt=final_prompt)
+    body = response
 
-            if isinstance(body, list):
-                # 각 ContentBlock 객체에서 문자열 데이터를 추출
-                strings = [block.text for block in body]
-                # 추출된 문자열 데이터의 리스트를 공백으로 연결
-                body = ' '.join(strings)
+    if isinstance(body, list):
+        # 각 ContentBlock 객체에서 문자열 데이터를 추출
+        strings = [block.text for block in body]
+        # 추출된 문자열 데이터의 리스트를 공백으로 연결
+        body = ' '.join(strings)
 
-            tags = extract_tags(body)
+    tags = extract_tags(body)
 
-            header = make_header(topic=topic, category=category, tags=tags)
-            body = '\n'.join(body.strip().split('\n')[1:])
-            output = header + body
+    header = make_header(topic=topic, category=category, tags=tags)
+    body = '\n'.join(body.strip().split('\n')[1:])
+    output = header + body
 
-            yesterday = datetime.now() - timedelta(days=1)
-            timestring = yesterday.strftime('%Y-%m-%d')
-            filename = f"{timestring}-{'-'.join(topic.lower().split())}.md"
-            with open(filename, 'w') as f:
-                f.write(output)
-                f.close()
+    yesterday = datetime.now() - timedelta(days=1)
+    timestring = yesterday.strftime('%Y-%m-%d')
+    filename = f"{timestring}-{'-'.join(topic.lower().split())}.md"
+    
+    # 블로그 퀄리티 평가 및 피드백 제공
+    quality_score, feedback = evaluate_blog_quality(output)
 
-            # 블로그 퀄리티 평가 및 피드백 제공
-            quality_score, feedback = evaluate_blog_quality(output)
+    # 블로그 글 저장
+    save_blog_post(filename, topic, category, tags, output)
 
-            # 블로그 글 저장
-            save_blog_post(filename, topic, category, tags, output)
+    return filename, quality_score, feedback
 
-            return filename, quality_score, feedback
+def main():
+    st.set_page_config(page_title="Blog Generator", layout="wide")
+    load_blog_posts()
+
+    # choice 변수에 '블로그 생성'으로 기본값 할당
+    choice = "블로그 생성"
+
+    # 사이드바에 고정형 메뉴 버튼 추가
+    st.sidebar.title("메뉴")
+    if st.sidebar.button("블로그 생성"):
+        choice = "블로그 생성"
+    elif st.sidebar.button("생성된 블로그 목록"):
+        choice = "생성된 블로그 목록"
+
+    if choice == "블로그 생성":
+        # Preset Container
+        preset_container = st.container()
+        preset_container.subheader('1. 설정')
+        tab_single, tab_multiple = preset_container.tabs(['1개 생성', '여러개 생성'])
+
+        col1, col2 = tab_single.columns(2)
+
+        topic = col1.text_input(label='주제 입력', placeholder='주제를 입력해 주세요')
+        col1.markdown('(예시)')
+        col1.markdown('`차량 구매보다 장기렌트가 유리한 경우 3가지`')
+
+        category = col2.text_input(label='카테고리 입력', placeholder='카테고리를 입력해 주세요')
+        col2.markdown('(예시)')
+        col2.markdown('`장기렌트`')
 
         with tab_single:
             # Prompt Container
@@ -279,9 +276,21 @@ def main():
                 if button:
                     filename, quality_score, feedback = generate_blog(topic=topic, category=category, prompt=prompt)
 
-                    # 블로그 미리보기 출력
-                    with open(filename, 'r') as f:
-                        blog_preview = f.read()
+                    # 깃헙 연결
+                    g = Github(ACCESS_TOKEN)
+                    repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
+
+                    # 파일 경로 수정
+                    file_path = f"blog/posts/{filename}"
+
+                    try:
+                        # 깃헙에서 파일 읽기
+                        file_content = repo.get_contents(file_path).decoded_content.decode('utf-8')
+                        blog_preview = file_content
+                    except:
+                        st.error(f"파일을 찾을 수 없습니다: {file_path}")
+                        blog_preview = "파일을 찾을 수 없습니다."
+
                     prompt_container.markdown(blog_preview)
 
                     # 블로그 퀄리티 점수 및 피드백 출력
@@ -364,8 +373,21 @@ def main():
                     st.markdown(f"**태그**: {tags}")
                     st.markdown(f"**생성일**: {created_at}")
 
-                    with open(filename, 'r') as f:
-                        blog_content = f.read()
+                    # 깃헙 연결
+                    g = Github(ACCESS_TOKEN)
+                    repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
+
+                    # 파일 경로 수정
+                    file_path = f"blog/posts/{filename}"
+
+                    try:
+                        # 깃헙에서 파일 읽기
+                        file_content = repo.get_contents(file_path).decoded_content.decode('utf-8')
+                        blog_content = file_content
+                    except:
+                        st.error(f"파일을 찾을 수 없습니다: {file_path}")
+                        blog_content = "파일을 찾을 수 없습니다."
+
                     st.markdown(blog_content)
 
                     # 파일 다운로드 버튼 생성
@@ -373,6 +395,7 @@ def main():
                                                       data=get_file(filename=filename),
                                                       file_name=filename,
                                                       mime='text/markdown')
+
 
 
 if __name__ == '__main__':
