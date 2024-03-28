@@ -70,13 +70,6 @@ title:  "{topic}"
     return page_head
 
 
-def evaluate_blog_quality(blog_content):
-    # TODO: 블로그 퀄리티 평가 로직 구현
-    quality_score = 4.5  # 임시 점수
-    feedback = "블로그의 내용과 구성이 좋습니다. 다만 이미지를 추가하면 더욱 풍부한 콘텐츠가 될 것 같아요."  # 임시 피드백
-    return quality_score, feedback
-
-
 def save_blog_post(filename, topic, category, tags, content):
     blog_post = {
         'filename': filename,
@@ -95,6 +88,9 @@ def save_blog_post(filename, topic, category, tags, content):
     # 깃헙 연결
     g = Github(ACCESS_TOKEN)
     repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
+
+    # 파일 경로 수정
+    file_path = f"blog/posts/{filename}"
 
     # 블로그 포스트 파일 업로드
     repo.create_file(
