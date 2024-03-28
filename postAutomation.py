@@ -1,3 +1,4 @@
+import os
 import re
 import zipfile
 import anthropic
@@ -6,8 +7,10 @@ import pandas as pd
 import json
 from datetime import datetime, timedelta
 
-# API 키를 여기에 하드코딩합니다.
-API_KEY = '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'
+API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+
+if API_KEY is None:
+    raise ValueError("ANTHROPIC_API_KEY environment variable is not set.")
 
 
 def generate_text(prompt, model="claude-3-opus-20240229", max_tokens=3500, temperature=0.3):
